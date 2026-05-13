@@ -36,9 +36,11 @@ func main() {
 		// las llaves {} son solo estilo visual para agrupar — no crean un scope nuevo en Go
 		// es una convención para que quede claro que estas rutas pertenecen al grupo
 
-		products.GET("", handlers.GetProducts)        // GET /products
-		products.GET("/:id", handlers.GetProductByID) // GET /products/1, /products/2, etc.
-		products.POST("", handlers.CreateProduct)     // POST /products
+		products.GET("", handlers.GetProducts)           // GET /products
+		products.GET("/:id", handlers.GetProductByID)    // GET /products/:id
+		products.POST("", handlers.CreateProduct)        // POST /products
+		products.PUT("/:id", handlers.UpdateProduct)     // PUT /products/:id
+		products.DELETE("/:id", handlers.DeleteProduct)  // DELETE /products/:id
 	}
 
 	// Run() levanta el servidor HTTP en el puerto indicado y bloquea el proceso

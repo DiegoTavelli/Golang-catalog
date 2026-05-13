@@ -186,3 +186,106 @@ func CreateProduct(c *gin.Context) {
 	// Equivalente a: res.status(201).json({ data: newProduct })
 	c.JSON(http.StatusCreated, gin.H{"data": newProduct})
 }
+
+// UpdateProduct maneja PUT /products/:id
+//
+// En Go no existe el "spread operator" ni Object.assign() de JS
+// Para actualizar un struct, accedés a cada campo directamente por índice
+// Esto es más verbose pero más explícito — sabés exactamente qué estás cambiando
+func UpdateProduct(c *gin.Context) {
+
+	// mismo patrón de siempre — leer y convertir el ID del param de ruta
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID debe ser un número"})
+		return
+	}
+
+	// parseamos y validamos el body — igual que en CreateProduct
+	var input models.CreateProductInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// buscamos el producto por índice, no por valor
+	// necesitamos el ÍNDICE (i) porque vamos a modificar el slice original
+	// si usáramos "for _, p := range products" obtendríamos una COPIA de cada producto
+	// modificar la copia no afecta el slice original — bug clásico en Go
+	//
+	// Equivalente a:
+	//   const index = products.findIndex(p => p.ID === id)
+	//   if (index === -1) return res.status(404)...
+	//   products[index] = { ...products[index], ...input }
+	for i, p := range products {
+		if p.ID == id {
+
+			// products[i] accede al elemento original del slice (no a una copia)
+			// actualizamos campo por campo — en Go no hay spread ni merge automático
+			products[i].Name = input.Name
+			products[i].Price = input.Price
+			products[i].Category = input.Category
+			products[i].Stock = input.Stock
+
+			// respondemos con el producto actualizado
+			c.JSON(http.StatusOK, gin.H{"data": products[i]})
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+}
+
+// DeleteProduct maneja DELETE /products/:id
+//
+// En Go no hay .filter() como en JS
+// Para eliminar un elemento de un slice, se construye un slice nuevo sin ese elemento
+// Es un patrón idiomático de Go — se ve raro al principio pero es la forma correcta
+func DeleteProduct(c *gin.Context) {
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID debe ser un número"})
+		return
+	}
+
+	// buscamos el índice del producto a eliminar
+	// -1 indica "no encontrado" — mismo concepto que findIndex() en JS
+	indexToDelete := -1
+	for i, p := range products {
+		if p.ID == id {
+			indexToDelete = i
+			break // encontramos el índice, no hace falta seguir iterando
+		}
+	}
+
+	// si no encontramos el producto, respondemos 404
+	if indexToDelete == -1 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+		return
+	}
+
+	// eliminamos el elemento del slice — este es el patrón idiomático de Go:
+	//
+	// products[:indexToDelete]  → todos los elementos ANTES del índice
+	// products[indexToDelete+1:] → todos los elementos DESPUÉS del índice
+	// append() los une saltando el elemento que queremos borrar
+	//
+	// Equivalente a: products.filter(p => p.ID !== id)
+	//
+	// Ejemplo visual con índice 1:
+	//   slice original: [A, B, C, D]
+	//   [:1]          → [A]
+	//   [2:]          → [C, D]
+	//   resultado     → [A, C, D]
+	//
+	// El ... (spread) en Go desempaqueta el slice para que append pueda recibirlo
+	// Equivalente al spread operator ... de JS pero solo para slices en append
+	products = append(products[:indexToDelete], products[indexToDelete+1:]...)
+
+	// 200 con mensaje — algunos usan 204 No Content (sin body)
+	// usamos 200 para ser explícitos y confirmar qué se eliminó
+	c.JSON(http.StatusOK, gin.H{"message": "Producto eliminado", "id": id})
+}
