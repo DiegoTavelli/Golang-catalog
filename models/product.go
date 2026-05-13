@@ -1,6 +1,6 @@
 package models // este archivo pertenece al package "models"
                // en Go, el package name determina cómo otros archivos importan esto:
-               //   import "github.com/diegotavelli/go-catalog/models"
+               //   import "github.com/DiegoTavelli/Golang-catalog/models"
                //   models.Product{} ← así se usa
                // Equivalente a: una carpeta entities/ o dto/ en NestJS
 

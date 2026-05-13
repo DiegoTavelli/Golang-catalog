@@ -1,4 +1,4 @@
-module github.com/diegotavelli/go-catalog
+module github.com/DiegoTavelli/Golang-catalog
 
 go 1.26.3
 

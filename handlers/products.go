@@ -1,15 +1,15 @@
 package handlers // equivalente a un @Controller en NestJS
-                 // agrupa todas las funciones que manejan requests de productos
+// agrupa todas las funciones que manejan requests de productos
 
 import (
 	"net/http" // librería estándar de Go para constantes HTTP (StatusOK, StatusNotFound, etc.)
-	           // equivalente a: HttpStatus de @nestjs/common
+	// equivalente a: HttpStatus de @nestjs/common
 
 	"strconv" // librería estándar para conversiones de tipos — string a int, int a string, etc.
-	          // en TS harías parseInt() o toString() directamente, en Go hay una librería dedicada
+	// en TS harías parseInt() o toString() directamente, en Go hay una librería dedicada
 
+	"github.com/DiegoTavelli/Golang-catalog/models"
 	"github.com/gin-gonic/gin"
-	"github.com/diegotavelli/go-catalog/models"
 )
 
 // products simula una base de datos en memoria
@@ -18,17 +18,19 @@ import (
 // []models.Product es un "slice" — el array dinámico de Go
 //
 // Diferencia entre array y slice en Go:
-//   [3]Product → array fijo de exactamente 3 elementos (raro de usar)
-//   []Product  → slice, tamaño dinámico, como los arrays de JS
+//
+//	[3]Product → array fijo de exactamente 3 elementos (raro de usar)
+//	[]Product  → slice, tamaño dinámico, como los arrays de JS
 //
 // Equivalente a:
-//   const products: Product[] = [...]
+//
+//	const products: Product[] = [...]
 var products = []models.Product{
 	// {} inicializa un struct — equivalente a un objeto literal en JS
 	// podés nombrar los campos (Name: "valor") o no, pero nombrarlos es más claro
-	{ID: 1, Name: "Notebook Lenovo",  Price: 1200.00, Category: "electronics", Stock: 10},
-	{ID: 2, Name: "Mouse Logitech",   Price: 35.00,   Category: "electronics", Stock: 50},
-	{ID: 3, Name: "Silla Gamer",      Price: 450.00,  Category: "furniture",   Stock: 5},
+	{ID: 1, Name: "Notebook Lenovo", Price: 1200.00, Category: "electronics", Stock: 10},
+	{ID: 2, Name: "Mouse Logitech", Price: 35.00, Category: "electronics", Stock: 50},
+	{ID: 3, Name: "Silla Gamer", Price: 450.00, Category: "furniture", Stock: 5},
 }
 
 // nextID simula un autoincrement de base de datos
@@ -40,9 +42,10 @@ var nextID = 4
 // En Go las funciones handler reciben un *gin.Context — el objeto central de gin
 // Contiene todo: el request, el response, los params, el body, los headers, etc.
 // Equivalente a:
-//   (req: Request, res: Response) en Express
-//   (@Req() req, @Res() res) en NestJS
-//   O directamente @Query(), @Param(), @Body() en NestJS decorators
+//
+//	(req: Request, res: Response) en Express
+//	(@Req() req, @Res() res) en NestJS
+//	O directamente @Query(), @Param(), @Body() en NestJS decorators
 //
 // El * antes de gin.Context significa "puntero a gin.Context"
 // Un puntero es una referencia al objeto en memoria — no una copia
@@ -71,7 +74,7 @@ func GetProducts(c *gin.Context) {
 			"data": products,
 		})
 		return // return corta la función — en Go no hay "else" implícito después de responder
-		       // si no ponés return, Go sigue ejecutando el código de abajo (bug clásico)
+		// si no ponés return, Go sigue ejecutando el código de abajo (bug clásico)
 	}
 
 	// declaramos un slice vacío para acumular resultados filtrados

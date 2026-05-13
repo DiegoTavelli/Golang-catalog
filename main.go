@@ -8,7 +8,7 @@ package main // todo archivo Go pertenece a un "package".
 // Equivalente a: los import al tope de cada archivo TS, pero más estricto
 import (
 	"github.com/gin-gonic/gin"                        // framework web — equivalente a express
-	"github.com/diegotavelli/go-catalog/handlers"     // nuestro package local de handlers
+	"github.com/DiegoTavelli/Golang-catalog/handlers"     // nuestro package local de handlers
 )
 
 // func main() es el punto de entrada del programa
