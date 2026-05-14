@@ -8,6 +8,9 @@ import (
 	"strconv" // librería estándar para conversiones de tipos — string a int, int a string, etc.
 	// en TS harías parseInt() o toString() directamente, en Go hay una librería dedicada
 
+	"strings" // librería estándar para operaciones con strings — Contains, ToLower, TrimSpace, etc.
+	// equivalente a: métodos nativos de string en JS (.includes(), .toLowerCase(), .trim())
+
 	"github.com/DiegoTavelli/Golang-catalog/models"
 	"github.com/gin-gonic/gin"
 )
@@ -54,51 +57,91 @@ var nextID = 4
 // Equivalente a: pasar objetos por referencia en JS (todos los objetos en JS son referencias)
 func GetProducts(c *gin.Context) {
 
-	// c.Query() lee query parameters de la URL
-	// GET /products?category=electronics → c.Query("category") devuelve "electronics"
-	// GET /products → c.Query("category") devuelve "" (string vacío, no nil/undefined)
+	// leemos todos los query params de una vez
+	// c.Query() devuelve "" si el param no existe — nunca nil/undefined
 	// Equivalente a: req.query.category en Express
 	category := c.Query("category")
+	search := c.Query("q")        // GET /products?q=notebook → busca por nombre
+	pageStr := c.Query("page")    // GET /products?page=2
+	limitStr := c.Query("limit")  // GET /products?limit=10
 
-	// en Go no hay if/else ternario ni valores "falsy"
-	// "" (string vacío) no es false — tenés que comparar explícitamente
-	if category == "" {
+	// --- PASO 1: filtrar por category y búsqueda por nombre ---
 
-		// c.JSON serializa el segundo argumento a JSON y lo manda como response
-		// primer argumento: HTTP status code
-		// segundo argumento: cualquier dato — gin.H es un shortcut para map[string]any{}
-		//
-		// gin.H{"data": products} genera: { "data": [...] }
-		// Equivalente a: res.status(200).json({ data: products }) en Express
-		c.JSON(http.StatusOK, gin.H{
-			"data": products,
-		})
-		return // return corta la función — en Go no hay "else" implícito después de responder
-		// si no ponés return, Go sigue ejecutando el código de abajo (bug clásico)
-	}
+	// empezamos con todos los productos y vamos filtrando
+	// esta técnica se llama "pipeline de filtros" — cada condición reduce el slice
+	// Equivalente a: products.filter(p => ...).filter(p => ...)
+	var result []models.Product
 
-	// declaramos un slice vacío para acumular resultados filtrados
-	// var filtered []models.Product → equivalente a: const filtered: Product[] = []
-	// nil en Go es el valor cero de un slice — distinto de un slice vacío, pero ambos funcionan con append
-	var filtered []models.Product
-
-	// range itera sobre el slice — equivalente a for...of en JS
-	// devuelve dos valores: el índice y el elemento
-	// _ descarta el índice (Go da error si declarás una variable y no la usás)
-	// Equivalente a:
-	//   for (const p of products) { ... }
-	//   products.forEach(p => { ... })
 	for _, p := range products {
-		if p.Category == category {
-			// append() agrega un elemento al slice y devuelve el nuevo slice
-			// IMPORTANTE: en Go append puede crear un slice nuevo internamente
-			// por eso siempre reasignás: filtered = append(filtered, p)
-			// Equivalente a: filtered.push(p) — pero push muta el array, append devuelve uno nuevo
-			filtered = append(filtered, p)
+
+		// filtro por categoría — si category está vacío, este filtro no aplica
+		if category != "" && p.Category != category {
+			continue // "saltá este elemento y seguí con el siguiente" — equivalente a continue en JS
 		}
+
+		// filtro por búsqueda de texto en el nombre
+		// strings.Contains(s, substr) → equivalente a s.includes(substr) en JS
+		// strings.ToLower() → equivalente a s.toLowerCase() en JS
+		// los aplicamos a ambos lados para que la búsqueda sea case-insensitive
+		if search != "" && !strings.Contains(strings.ToLower(p.Name), strings.ToLower(search)) {
+			continue
+		}
+
+		// si pasó todos los filtros, lo agregamos al resultado
+		result = append(result, p)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": filtered})
+	// --- PASO 2: paginación ---
+
+	// valores por defecto si no se pasan los params
+	// strconv.Atoi devuelve error si el string no es número — en ese caso usamos el default
+	page := 1
+	limit := 10
+
+	// el segundo valor de retorno (err) lo descartamos con _ si no nos importa el error
+	// en este caso: si page=abc, Atoi falla y usamos el default 1 — comportamiento correcto
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		limit = l
+	}
+
+	// calculamos el índice de inicio y fin del "slice" de resultados
+	// page=1, limit=10 → start=0, end=10
+	// page=2, limit=10 → start=10, end=20
+	// Equivalente a lo que haría .skip() y .take() en TypeORM
+	start := (page - 1) * limit
+	end := start + limit
+
+	// guard clause — si start supera el total de resultados, devolvemos lista vacía
+	// sin esto, products[start:end] podría hacer panic (equivalente a un crash en Go)
+	if start >= len(result) {
+		c.JSON(http.StatusOK, gin.H{
+			"data":  []models.Product{}, // slice vacío explícito — mejor que null en la respuesta
+			"page":  page,
+			"limit": limit,
+			"total": len(result),
+		})
+		return
+	}
+
+	// ajustamos end si supera el largo del slice
+	// sin esto: result[0:15] cuando result tiene 8 elementos → panic
+	if end > len(result) {
+		end = len(result)
+	}
+
+	// result[start:end] es un "sub-slice" — equivalente a arr.slice(start, end) en JS
+	// no copia los datos, solo crea una nueva "vista" del slice original
+	paginated := result[start:end]
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  paginated,
+		"page":  page,
+		"limit": limit,
+		"total": len(result), // total de resultados sin paginar — útil para el frontend
+	})
 }
 
 // GetProductByID maneja GET /products/:id
