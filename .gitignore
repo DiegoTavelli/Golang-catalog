@@ -1,0 +1,15 @@
+# binarios compilados — Go genera estos con "go build"
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# directorio de binarios si usás "go build -o bin/"
+bin/
+
+# cache de tests
+*.test
+
+# cache de Go
+*.out
