@@ -25,11 +25,17 @@ var products = []model.Product{
 	{ID: 1, Name: "Notebook Lenovo", Price: 1200.00, Category: "electronics", Stock: 10},
 	{ID: 2, Name: "Mouse Logitech", Price: 35.00, Category: "electronics", Stock: 50},
 	{ID: 3, Name: "Silla Gamer", Price: 450.00, Category: "furniture", Stock: 5},
+	{ID: 4, Name: "Teclado Semi Mecánico", Price: 69.99, Category: "electronics", Stock: 20},
+	{ID: 5, Name: "Teclado Mecánico Redragon", Price: 89.99, Category: "electronics", Stock: 20},
+	{ID: 6, Name: "Monitor LG 27'", Price: 320.00, Category: "electronics", Stock: 7},
+	{ID: 7, Name: "Escritorio Gamer L", Price: 275.50, Category: "furniture", Stock: 3},
+	{ID: 8, Name: "Auriculares Sony WH-1000XM5", Price: 199.99, Category: "electronics", Stock: 15},
+	{ID: 9, Name: "Silla Ergonómica Herman Miller", Price: 890.00, Category: "furniture", Stock: 2},
 }
 
 // nextID simula un autoincrement de base de datos
 // en una app real esto lo maneja Postgres automáticamente con SERIAL o BIGSERIAL
-var nextID = 4
+var nextID = 10
 
 // FindAll devuelve todos los productos sin filtrar.
 // El service es el que filtra — el repository solo entrega los datos crudos.
