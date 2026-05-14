@@ -193,6 +193,99 @@ Siempre en ese orden. El `c.JSON` no "aplica" nada — solo serializa y manda la
 
 ---
 
+## Estructura profesional — Fase 5
+
+### El problema con la estructura actual
+
+Hasta la Fase 4, toda la lógica vive en el handler:
+
+```
+handler: lee params → filtra → pagina → responde
+```
+
+Esto funciona para aprender pero no escala:
+- Si querés testear la lógica de filtrado, tenés que levantar un servidor HTTP entero
+- Si querés cambiar la fuente de datos (slice → DB), tocás el handler
+- Si tenés 10 endpoints, repetís la lógica de paginación 10 veces
+
+### Las tres capas
+
+En cualquier backend real (NestJS, Spring, Go) el código se divide en tres responsabilidades:
+
+```
+Handler     → habla HTTP (lee params, responde JSON) — no sabe nada de datos
+Service     → lógica de negocio (filtrar, paginar, validar reglas) — no sabe de HTTP ni de DB
+Repository  → acceso a datos (slice, DB, API externa) — no sabe de HTTP ni de reglas
+```
+
+```
+Request HTTP
+    ↓
+handler/product_handler.go   → lee params, llama service, responde
+    ↓
+service/product_service.go   → filtra, pagina, aplica reglas
+    ↓
+repository/product_repository.go  → busca/guarda datos (hoy: slice, después: DB)
+    ↓
+Response HTTP
+```
+
+Equivalente en NestJS:
+```
+@Controller → @Injectable (Service) → @Injectable (Repository / TypeORM)
+```
+
+### Estructura de carpetas estándar Go
+
+```
+go-catalog/
+├── cmd/
+│   └── api/
+│       └── main.go              ← solo arranca el servidor
+├── internal/
+│   ├── handler/
+│   │   └── product_handler.go  ← solo HTTP: leer params, llamar service, JSON
+│   ├── service/
+│   │   └── product_service.go  ← lógica: filter, paginate, reglas de negocio
+│   ├── repository/
+│   │   └── product_repository.go ← datos: hoy slice, después GORM/DB
+│   └── model/
+│       └── product.go           ← structs (Product, CreateProductInput)
+├── pkg/
+│   └── pagination/
+│       └── pagination.go        ← utilidades reutilizables entre proyectos
+└── go.mod
+```
+
+**`internal/`** — enforceado por el compilador de Go. Solo el propio módulo puede importar
+de esta carpeta. Nadie externo puede depender de tu implementación interna.
+Equivalente a: todo privado, ningún `export` accidental.
+
+**`pkg/`** — código que podría usarse en otros proyectos. Helpers genéricos, utilidades.
+Equivalente a: librería interna compartida.
+
+**`cmd/`** — el punto de entrada. En proyectos grandes puede haber varios comandos
+(`cmd/api/`, `cmd/worker/`, `cmd/migrate/`) — cada uno con su `main.go`.
+
+### Por qué separar ahora y no después
+
+Separar capas antes del testing (Fase 7) hace que los tests sean triviales:
+
+```go
+// testear la lógica de filtrado sin HTTP, sin gin, sin nada:
+result := service.FilterProducts(products, "electronics", "note")
+assert.Len(t, result, 1)
+
+// testear el repository sin DB:
+repo := NewInMemoryRepository()
+p, err := repo.FindByID(1)
+```
+
+Y cuando lleguemos a GORM (Fase 8), **solo cambia el repository** — el handler
+y el service no se tocan. Eso es lo que hace una buena arquitectura en capas.
+
+---
+
 ## Lo que viene — con DB real (GORM)
 
 Cuando conectemos PostgreSQL, el struct Product va a tener tags adicionales:

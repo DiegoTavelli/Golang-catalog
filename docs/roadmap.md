@@ -26,22 +26,39 @@ Comparaciones constantes con NestJS/TypeScript para acelerar el aprendizaje.
 - [x] PUT /products/:id — actualizar producto
 - [x] DELETE /products/:id — eliminar producto
 
-## FASE 4 — Búsqueda y filtros
-- [ ] GET /products?q=nombre — búsqueda por nombre
-- [ ] Paginación básica (?page=1&limit=10)
+## FASE 4 — Búsqueda y filtros ✅
+- [x] GET /products?q=nombre — búsqueda por nombre (case-insensitive)
+- [x] GET /products?category=X&q=Y — combinación de filtros (pipeline de filtros)
+- [x] Paginación básica (?page=1&limit=10) con guard clauses
 
-## FASE 5 — Buenas prácticas
+## FASE 5 — Estructura profesional y capas
+El proyecto actual tiene toda la lógica en el handler: filtra, pagina y responde
+en la misma función. En producción eso no escala. Esta fase frena y reorganiza.
+
+**Por qué este momento:** entre el CRUD (Fase 3-4) y el error handling (Fase 6)
+es el lugar natural para separar capas — antes de agregar más features encima de
+una estructura que ya empieza a doler.
+
+- [ ] Extraer `service/product_service.go` — lógica de negocio (filter, paginate)
+- [ ] Extraer `repository/product_repository.go` — acceso a datos (slice en memoria por ahora)
+- [ ] Handler queda solo como capa HTTP: leer params → llamar service → responder JSON
+- [ ] Entender `internal/` vs `pkg/` — visibilidad enforceada por el compilador
+- [ ] Estructura de carpetas estándar Go: `cmd/`, `internal/`, `pkg/`
+- [ ] Documentar el flujo handler → service → repository en arquitectura.md
+
+## FASE 6 — Buenas prácticas
 - [ ] Manejo de errores consistente (equivalente a HttpException en NestJS)
 - [ ] Middleware de logging (equivalente a interceptors)
 - [ ] Respuestas con estructura estandarizada { data, error, status }
 
-## FASE 6 — Testing
-- [ ] Test unitario de un handler con `testing` package nativo de Go
-- [ ] Test de integración de un endpoint
+## FASE 7 — Testing
+- [ ] Test unitario de un service (lógica pura, sin HTTP)
+- [ ] Test de integración de un endpoint con httptest
+- [ ] Por qué separar capas hace el testing trivial
 
-## FASE 7 — Base de datos real
+## FASE 8 — Base de datos real
 - [ ] Conectar PostgreSQL con GORM
-- [ ] Migrar el slice en memoria a DB real
+- [ ] Migrar el repository (solo esa capa cambia — handler y service no se tocan)
 - [ ] CRUD completo con persistencia
 
 ---
