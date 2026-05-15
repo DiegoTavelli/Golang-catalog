@@ -264,6 +264,43 @@ Equivalente a: todo privado, ningún `export` accidental.
 **`pkg/`** — código que podría usarse en otros proyectos. Helpers genéricos, utilidades.
 Equivalente a: librería interna compartida.
 
+### Generics — `pkg/pagination` como ejemplo real
+
+La lógica de paginación (calcular start/end, guard clauses, sub-slice) no tiene nada de
+"productos" — funciona igual para cualquier tipo de dato. Por eso vive en `pkg/`.
+
+Go soporta generics desde la versión 1.18 con la sintaxis `[T restricción]`:
+
+```go
+// T es un "type parameter" — se define al usar la función, no al escribirla
+// "any" es la restricción: T puede ser cualquier tipo
+func Paginate[T any](items []T, page, limit int) Result[T] { ... }
+```
+
+Uso desde el service — Go infiere el tipo `T` automáticamente:
+
+```go
+// Go ve que filtered es []model.Product → infiere T = model.Product solo
+pagination.Paginate(filtered, page, limit)
+
+// Equivalente exacto en TypeScript:
+paginate<Product>(filtered, page, limit)
+// o con inferencia: paginate(filtered, page, limit)
+```
+
+El service ya no define su propio `ProductList` — usa un type alias:
+
+```go
+// en vez de repetir la misma estructura, reutilizamos el tipo genérico
+type ProductList = pagination.Result[model.Product]
+
+// Equivalente en TypeScript:
+type ProductList = Page<Product>
+```
+
+**Regla práctica:** si una función no menciona ningún tipo de dominio (Product, User, Order)
+en su implementación, probablemente pertenece a `pkg/` y debería ser genérica.
+
 **`cmd/`** — el punto de entrada. En proyectos grandes puede haber varios comandos
 (`cmd/api/`, `cmd/worker/`, `cmd/migrate/`) — cada uno con su `main.go`.
 

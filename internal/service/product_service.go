@@ -18,22 +18,18 @@ import (
 
 	"github.com/DiegoTavelli/Golang-catalog/internal/model"
 	"github.com/DiegoTavelli/Golang-catalog/internal/repository"
+	"github.com/DiegoTavelli/Golang-catalog/pkg/pagination"
 )
 
-// ProductList es el struct de respuesta del listado paginado.
+// ProductList es un alias del tipo genérico pagination.Result[model.Product].
 //
-// En NestJS devolverías un objeto plano: { data: Product[], total: number, page: number, limit: number }
-// En Go definimos un struct para eso — tipado explícito, sin objetos anónimos.
-// El handler recibe este struct y lo convierte a JSON con gin.H{}.
+// En vez de definir nuestro propio struct con Data/Total/Page/Limit, reutilizamos
+// el que vive en pkg/pagination — esa es exactamente la razón de que esté en pkg/.
+// El handler sigue usando los mismos campos: result.Data, result.Total, etc.
 //
-// Nota: este struct vive en el package service porque es una construcción interna
-// del service — no es un modelo de DB ni un DTO de entrada del cliente.
-type ProductList struct {
-	Data  []model.Product
-	Total int
-	Page  int
-	Limit int
-}
+// Equivalente en TypeScript:
+//   type ProductList = Page<Product>  // reutilizando el tipo genérico
+type ProductList = pagination.Result[model.Product]
 
 // GetProducts aplica filtros y paginación sobre todos los productos.
 //
@@ -65,31 +61,11 @@ func GetProducts(category, search string, page, limit int) ProductList {
 		filtered = append(filtered, p)
 	}
 
-	// paginación — la aplicamos sobre el resultado filtrado, no sobre todos los productos
-	total := len(filtered) // len() → equivalente a arr.length en JS
-
-	// calculamos el índice de inicio en el slice
-	// page=1, limit=10 → start=0  (empieza desde el primer elemento)
-	// page=2, limit=10 → start=10 (salta los primeros 10)
-	// Equivalente a lo que haría .skip() y .take() en TypeORM
-	start := (page - 1) * limit
-
-	// guard clause: si start supera el total, no hay nada para devolver
-	// sin esto, filtered[start:end] haría panic (equivalente a un crash — no hay try/catch en Go)
-	if start >= total {
-		// []model.Product{} es un slice vacío explícito — mejor que nil en la respuesta JSON
-		// nil se serializa como null en JSON, []model.Product{} se serializa como []
-		return ProductList{Data: []model.Product{}, Total: total, Page: page, Limit: limit}
-	}
-
-	end := start + limit
-	if end > total { // ajustamos end si supera el largo del slice
-		end = total
-	}
-
-	// filtered[start:end] es un "sub-slice" — no copia los datos, crea una vista del slice original
-	// Equivalente a: filtered.slice(start, end) en JS
-	return ProductList{Data: filtered[start:end], Total: total, Page: page, Limit: limit}
+	// paginación delegada al helper genérico de pkg/pagination
+	// toda la lógica de índices, guard clauses y sub-slices vive ahí — no se repite acá
+	// Go infiere el tipo T = model.Product automáticamente por el tipo de "filtered"
+	// Equivalente a: paginate<Product>(filtered, page, limit) en TS
+	return pagination.Paginate(filtered, page, limit)
 }
 
 // GetProductByID delega directamente al repository.

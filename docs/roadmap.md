@@ -39,12 +39,13 @@ en la misma función. En producción eso no escala. Esta fase frena y reorganiza
 es el lugar natural para separar capas — antes de agregar más features encima de
 una estructura que ya empieza a doler.
 
-- [ ] Extraer `service/product_service.go` — lógica de negocio (filter, paginate)
-- [ ] Extraer `repository/product_repository.go` — acceso a datos (slice en memoria por ahora)
-- [ ] Handler queda solo como capa HTTP: leer params → llamar service → responder JSON
-- [ ] Entender `internal/` vs `pkg/` — visibilidad enforceada por el compilador
-- [ ] Estructura de carpetas estándar Go: `cmd/`, `internal/`, `pkg/`
-- [ ] Documentar el flujo handler → service → repository en arquitectura.md
+- [x] Extraer `service/product_service.go` — lógica de negocio (filter, paginate)
+- [x] Extraer `repository/product_repository.go` — acceso a datos (slice en memoria por ahora)
+- [x] Handler queda solo como capa HTTP: leer params → llamar service → responder JSON
+- [x] Entender `internal/` vs `pkg/` — visibilidad enforceada por el compilador
+- [x] Estructura de carpetas estándar Go: `cmd/`, `internal/`, `pkg/`
+- [x] Documentar el flujo handler → service → repository en arquitectura.md
+- [x] Generics — `pkg/pagination` con `Paginate[T any]` reutilizable en cualquier tipo
 
 ## FASE 6 — Buenas prácticas
 - [ ] Manejo de errores consistente (equivalente a HttpException en NestJS)
@@ -82,6 +83,8 @@ una estructura que ya empieza a doler.
 | Eliminar de slice con `append([:i], [i+1:]...)` | `.filter()` en JS | ✅ |
 | `ShouldBindJSON` vs `BindJSON` | pipe + validación en NestJS | ✅ |
 | `if err := fn(); err != nil` | try/catch compacto | ✅ |
+| Generics `[T any]` | `function fn<T>` en TypeScript | ✅ |
+| `type Alias = OtroTipo` | `type Alias = OtroTipo` en TS | ✅ |
 | `func` con receiver | método de clase | ⬜ |
 | `interface{}` / `any` | `any` en TypeScript | ⬜ |
 | Goroutines | async/await (concepto distinto) | ⬜ |
