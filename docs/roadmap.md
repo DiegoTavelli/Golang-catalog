@@ -31,7 +31,7 @@ Comparaciones constantes con NestJS/TypeScript para acelerar el aprendizaje.
 - [x] GET /products?category=X&q=Y — combinación de filtros (pipeline de filtros)
 - [x] Paginación básica (?page=1&limit=10) con guard clauses
 
-## FASE 5 — Estructura profesional y capas
+## FASE 5 — Estructura profesional y capas ✅
 El proyecto actual tiene toda la lógica en el handler: filtra, pagina y responde
 en la misma función. En producción eso no escala. Esta fase frena y reorganiza.
 
@@ -47,10 +47,10 @@ una estructura que ya empieza a doler.
 - [x] Documentar el flujo handler → service → repository en arquitectura.md
 - [x] Generics — `pkg/pagination` con `Paginate[T any]` reutilizable en cualquier tipo
 
-## FASE 6 — Buenas prácticas
-- [ ] Manejo de errores consistente (equivalente a HttpException en NestJS)
-- [ ] Middleware de logging (equivalente a interceptors)
-- [ ] Respuestas con estructura estandarizada { data, error, status }
+## FASE 6 — Buenas prácticas ✅
+- [x] Middleware de logging custom — `internal/middleware/logger.go`
+- [x] Respuestas estandarizadas — `internal/response/response.go` con Success, Paginated, Error
+- [x] `gin.New()` + middlewares explícitos en vez de `gin.Default()` — entender el mecanismo
 
 ## FASE 7 — Testing
 - [ ] Test unitario de un service (lógica pura, sin HTTP)

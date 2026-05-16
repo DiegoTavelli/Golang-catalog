@@ -13,18 +13,21 @@ import (
 	// importamos solo el package handler — main.go no conoce service ni repository
 	// esa es la idea: main solo conecta las piezas, no implementa lógica
 	"github.com/DiegoTavelli/Golang-catalog/internal/handler"
+	"github.com/DiegoTavelli/Golang-catalog/internal/middleware"
 	"github.com/gin-gonic/gin" // framework web — equivalente a express o @nestjs/core
 )
 
 func main() {
 
-	// gin.Default() crea el router con dos middlewares ya incluidos:
-	//   Logger:   imprime cada request (método, ruta, status, tiempo de respuesta)
-	//   Recovery: si un handler hace "panic" (crash), lo captura y devuelve 500 — el server no cae
-	// Equivalente a:
-	//   const app = express(); app.use(morgan('dev')); app.use(errorHandler)
-	//   o en NestJS: NestFactory.create(AppModule) — que incluye todo esto automáticamente
-	router := gin.Default()
+	// gin.New() crea el router SIN middlewares — los registramos nosotros manualmente
+	// gin.Default() los incluye automáticamente, pero así aprendemos cómo funciona el mecanismo
+	// Equivalente a: const app = express() sin ningún app.use() todavía
+	router := gin.New()
+
+	// Use() registra middlewares globales — se ejecutan en TODOS los requests, en orden
+	// Equivalente a: app.use(fn) en Express  |  app.useGlobalInterceptors() en NestJS
+	router.Use(gin.Recovery()) // recovery: captura panics y devuelve 500 — nunca baja el server
+	router.Use(middleware.Logger()) // nuestro logger custom — reemplaza el de gin.Default()
 
 	// Group() agrupa rutas bajo un prefijo común — todas quedan con /products automáticamente
 	// Equivalente a:

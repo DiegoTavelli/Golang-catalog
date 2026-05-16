@@ -20,6 +20,7 @@ import (
 	// en JS harías parseInt() o toString() — en Go hay una librería dedicada para esto
 
 	"github.com/DiegoTavelli/Golang-catalog/internal/model"
+	"github.com/DiegoTavelli/Golang-catalog/internal/response"
 	"github.com/DiegoTavelli/Golang-catalog/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -56,15 +57,10 @@ func GetProducts(c *gin.Context) {
 	// Equivalente a: return this.productsService.findAll({ category, search, page, limit })
 	result := service.GetProducts(category, search, page, limit)
 
-	// c.JSON serializa el struct a JSON y escribe la respuesta HTTP
-	// gin.H{} es un alias de map[string]any — forma rápida de armar un objeto JSON
-	// Equivalente a: res.status(200).json({ data: ..., page: ..., ... })
-	c.JSON(http.StatusOK, gin.H{
-		"data":  result.Data,
-		"page":  result.Page,
-		"limit": result.Limit,
-		"total": result.Total,
-	})
+	// usamos response.Paginated() en vez de gin.H{} manual
+	// todas las respuestas exitosas pasan por el package response — formato consistente en toda la API
+	// Equivalente a: un interceptor de respuesta en NestJS que envuelve todo en { data, meta }
+	c.JSON(http.StatusOK, response.Paginated(result.Data, result.Total, result.Page, result.Limit))
 }
 
 // GetProductByID maneja GET /products/:id
@@ -76,7 +72,7 @@ func GetProductByID(c *gin.Context) {
 	if err != nil {
 		// el ID no era un número — respondemos 400 y salimos con return
 		// "early return" o "guard clause" — patrón igual en JS/TS
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID debe ser un número"})
+		c.JSON(http.StatusBadRequest, response.Error("ID debe ser un número"))
 		return
 	}
 
@@ -84,10 +80,10 @@ func GetProductByID(c *gin.Context) {
 	// equivalente a: const product = await this.service.findById(id) → product ?? throw new NotFoundException()
 	p, found := service.GetProductByID(id)
 	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+		c.JSON(http.StatusNotFound, response.Error("Producto no encontrado"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": p})
+	c.JSON(http.StatusOK, response.Success(p))
 }
 
 // CreateProduct maneja POST /products
@@ -106,25 +102,25 @@ func CreateProduct(c *gin.Context) {
 	// Equivalente a: @Body() input: CreateProductDto  ← NestJS con class-validator hace esto automáticamente
 	if err := c.ShouldBindJSON(&input); err != nil {
 		// err.Error() devuelve el mensaje de error como string — equivalente a err.message en JS
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
 		return
 	}
 
 	p := service.CreateProduct(input)
-	c.JSON(http.StatusCreated, gin.H{"data": p}) // 201 Created — status correcto para un POST que crea
+	c.JSON(http.StatusCreated, response.Success(p)) // 201 Created — status correcto para un POST que crea
 }
 
 // UpdateProduct maneja PUT /products/:id
 func UpdateProduct(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID debe ser un número"})
+		c.JSON(http.StatusBadRequest, response.Error("ID debe ser un número"))
 		return
 	}
 
 	var input model.CreateProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
 		return
 	}
 
@@ -132,17 +128,17 @@ func UpdateProduct(c *gin.Context) {
 	// si found es false → el ID no existía → 404
 	p, found := service.UpdateProduct(id, input)
 	if !found {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+		c.JSON(http.StatusNotFound, response.Error("Producto no encontrado"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": p})
+	c.JSON(http.StatusOK, response.Success(p))
 }
 
 // DeleteProduct maneja DELETE /products/:id
 func DeleteProduct(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID debe ser un número"})
+		c.JSON(http.StatusBadRequest, response.Error("ID debe ser un número"))
 		return
 	}
 
@@ -150,8 +146,8 @@ func DeleteProduct(c *gin.Context) {
 	// el handler es el que decide qué status HTTP corresponde a cada caso
 	// esta decisión HTTP no le pertenece al service — esa es la razón de separar capas
 	if !service.DeleteProduct(id) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+		c.JSON(http.StatusNotFound, response.Error("Producto no encontrado"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Producto eliminado", "id": id})
+	c.JSON(http.StatusOK, response.Success(map[string]any{"message": "Producto eliminado", "id": id}))
 }

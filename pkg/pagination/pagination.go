@@ -14,7 +14,8 @@ package pagination
 // "any" es la restricción: T puede ser cualquier tipo (equivalente a any en TS).
 //
 // Equivalente en TypeScript:
-//   interface Page<T> { data: T[]; total: number; page: number; limit: number }
+//
+//	interface Page<T> { data: T[]; total: number; page: number; limit: number }
 type Result[T any] struct {
 	Data  []T
 	Total int
@@ -28,12 +29,14 @@ type Result[T any] struct {
 // Go infiere el tipo T automáticamente según lo que le pases — no necesitás escribirlo.
 //
 // Uso:
-//   result := pagination.Paginate(products, 1, 10)  // T = models.Product, inferido solo
-//   result := pagination.Paginate(users, 2, 5)      // T = models.User, inferido solo
+//
+//	result := pagination.Paginate(products, 1, 10)  // T = models.Product, inferido solo
+//	result := pagination.Paginate(users, 2, 5)      // T = models.User, inferido solo
 //
 // Equivalente en TypeScript:
-//   function paginate<T>(items: T[], page: number, limit: number): Page<T>
-//   paginate(products, 1, 10)  // TypeScript infiere T = Product
+//
+//	function paginate<T>(items: T[], page: number, limit: number): Page<T>
+//	paginate(products, 1, 10)  // TypeScript infiere T = Product
 func Paginate[T any](items []T, page, limit int) Result[T] {
 	total := len(items)
 
